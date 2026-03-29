@@ -139,6 +139,7 @@
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.88), transparent 28%),
     linear-gradient(180deg, rgba(255, 246, 223, 0.96), rgba(232, 243, 214, 0.96));
   overflow: visible;
+  touch-action: none;
 }
 
 .board::after {
@@ -434,11 +435,43 @@
   }
 
   .board {
-    min-height: 1120px;
+    min-height: 980px;
   }
 
   .memo-card {
-    width: 104px;
-    height: 136px;
+    width: 78px;
+    height: 104px;
+  }
+
+  .card-face {
+    padding: 10px 9px;
+  }
+
+  .card-eyes {
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .eye {
+    width: 18px;
+    height: 22px;
+  }
+
+  .pupil {
+    top: 8px;
+    left: 6px;
+    width: 7px;
+    height: 7px;
+  }
+
+  .card-icon {
+    font-size: 2rem;
+    margin-top: 10px;
+  }
+
+  .card-name,
+  .card-prank,
+  .card-note {
+    font-size: 0.74rem;
   }
 }

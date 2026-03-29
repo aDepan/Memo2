@@ -7,7 +7,7 @@ import {
   SYMBOLS,
 } from './constants'
 import { getRandomEscapeEffect, getRandomFleeDuration } from './effects'
-import type { CardState, Position } from './types'
+import type { CardState, EscapeEffect, Position } from './types'
 
 type Bounds = {
   width: number
@@ -148,6 +148,43 @@ export const startChase = (
     effect,
     position:
       effect === 'hop' ? getHopPosition(card.position, dx, dy, bounds) : card.position,
+  }
+}
+
+export const startMobileRoam = (
+  card: CardState,
+  now: number,
+  bounds: Bounds,
+  velocityMap: VelocityMap,
+) => {
+  const nextDuration = getRandomFleeDuration()
+  const effect: EscapeEffect = Math.random() < 0.5 ? 'dodge' : 'bounce'
+  const directionX = card.id % 2 === 0 ? -1 : 1
+
+  if (effect === 'bounce') {
+    velocityMap[card.id] = {
+      x: directionX * 12,
+      y: -24,
+    }
+  } else {
+    velocityMap[card.id] = {
+      x: directionX * 1.8,
+      y: (Math.random() - 0.5) * 1.2,
+    }
+  }
+
+  return {
+    ...card,
+    sleeping: false,
+    fleeingDurationMs: nextDuration,
+    fleeingUntil: now + nextDuration,
+    hopUntil: null,
+    effect,
+    position: getImpulsePosition(
+      card.position,
+      { x: directionX * 6, y: 0 },
+      bounds,
+    ),
   }
 }
 

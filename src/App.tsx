@@ -23,6 +23,7 @@ import {
   shouldTriggerPrank,
   shouldRelaxCard,
   shouldStartChase,
+  startMobileRoam,
   startChase,
 } from './game/utils'
 import type { CardState, Position } from './game/types'
@@ -56,9 +57,40 @@ const App = () => {
   const [nowTick, setNowTick] = useState(() => performance.now())
   const [deckVersion, setDeckVersion] = useState(0)
   const [prankRevealsLeft, setPrankRevealsLeft] = useState(MAX_PRANK_REVEALS)
+  const [isTouchDevice, setIsTouchDevice] = useState(false)
 
   const matchedCount = cards.filter((card) => card.matched).length
   const allMatched = matchedCount === cards.length
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(pointer: coarse)')
+    const syncTouchMode = () => {
+      setIsTouchDevice(mediaQuery.matches)
+    }
+
+    syncTouchMode()
+    mediaQuery.addEventListener('change', syncTouchMode)
+
+    return () => mediaQuery.removeEventListener('change', syncTouchMode)
+  }, [])
+
+  useEffect(() => {
+    if (!isTouchDevice) {
+      return
+    }
+
+    const wakeFrame = window.requestAnimationFrame(() => {
+      setBoardAwake(true)
+      setCards((current) =>
+        current.map((card) => ({
+          ...card,
+          sleeping: false,
+        })),
+      )
+    })
+
+    return () => window.cancelAnimationFrame(wakeFrame)
+  }, [isTouchDevice])
 
   const isPrankEligible = (card: CardState) =>
     turns >= 10 &&
@@ -155,6 +187,14 @@ const App = () => {
         bounds,
         velocityRef.current,
       )
+    } else if (
+      isTouchDevice &&
+      !card.matched &&
+      !card.revealed &&
+      !card.sleeping &&
+      card.fleeingUntil === null
+    ) {
+      nextCard = startMobileRoam(card, now, bounds, velocityRef.current)
     }
 
     if (shouldRelaxCard(nextCard, cursor, distanceState.distance)) {
@@ -332,7 +372,7 @@ const App = () => {
         window.cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [allMatched, boardAwake])
+  }, [allMatched, boardAwake, isTouchDevice])
 
   useEffect(() => {
     if (!allMatched) {
@@ -366,6 +406,24 @@ const App = () => {
       y: event.clientY - rect.top,
       active: true,
     }
+  }
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    const rect = boardRef.current?.getBoundingClientRect()
+
+    if (!rect) {
+      return
+    }
+
+    cursorRef.current = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+      active: true,
+    }
+  }
+
+  const handlePointerUp = () => {
+    cursorRef.current.active = false
   }
 
   const handlePointerLeave = () => {
@@ -553,11 +611,14 @@ const App = () => {
           </div>
 
           <div
-            ref={boardRef}
-            className='board'
-            onPointerMove={handlePointerMove}
-            onPointerLeave={handlePointerLeave}
-          >
+          ref={boardRef}
+          className='board'
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
+        >
             {cards.map((card) => {
               const isFleeing =
                 card.fleeingUntil !== null && nowTick < card.fleeingUntil
