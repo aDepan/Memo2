@@ -18,9 +18,11 @@ import {
   createDeck,
   getBoardColumns,
   getCardDistanceState,
+  getMobilePanicPosition,
   getCardMotionState,
   getStoredVelocity,
   shouldTriggerPrank,
+  shouldTriggerMobilePanic,
   shouldRelaxCard,
   shouldStartChase,
   startMobileRoam,
@@ -58,6 +60,7 @@ const App = () => {
   const [deckVersion, setDeckVersion] = useState(0)
   const [prankRevealsLeft, setPrankRevealsLeft] = useState(MAX_PRANK_REVEALS)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
+  const [isCompactBoard, setIsCompactBoard] = useState(false)
 
   const matchedCount = cards.filter((card) => card.matched).length
   const allMatched = matchedCount === cards.length
@@ -75,22 +78,16 @@ const App = () => {
   }, [])
 
   useEffect(() => {
-    if (!isTouchDevice) {
-      return
+    const mediaQuery = window.matchMedia('(max-width: 640px)')
+    const syncCompactBoard = () => {
+      setIsCompactBoard(mediaQuery.matches)
     }
 
-    const wakeFrame = window.requestAnimationFrame(() => {
-      setBoardAwake(true)
-      setCards((current) =>
-        current.map((card) => ({
-          ...card,
-          sleeping: false,
-        })),
-      )
-    })
+    syncCompactBoard()
+    mediaQuery.addEventListener('change', syncCompactBoard)
 
-    return () => window.cancelAnimationFrame(wakeFrame)
-  }, [isTouchDevice])
+    return () => mediaQuery.removeEventListener('change', syncCompactBoard)
+  }, [])
 
   const isPrankEligible = (card: CardState) =>
     turns >= 10 &&
@@ -100,6 +97,15 @@ const App = () => {
     !card.revealed
 
   const getBoardBounds = (): Bounds => boardBoundsRef.current
+
+  const getLayoutCardSize = () => {
+    const scale = isCompactBoard ? 0.64 : 1
+
+    return {
+      width: CARD_WIDTH * scale,
+      height: CARD_HEIGHT * scale,
+    }
+  }
 
   const getConfettiOrigin = () => {
     const rect = boardRef.current?.getBoundingClientRect()
@@ -197,7 +203,12 @@ const App = () => {
       nextCard = startMobileRoam(card, now, bounds, velocityRef.current)
     }
 
-    if (shouldRelaxCard(nextCard, cursor, distanceState.distance)) {
+    const shouldRelax =
+      isTouchDevice && !cursor.active && nextCard.effect !== 'none'
+        ? false
+        : shouldRelaxCard(nextCard, cursor, distanceState.distance)
+
+    if (shouldRelax) {
       clearCardMotion(card.id)
 
       return {
@@ -300,11 +311,12 @@ const App = () => {
       const width = board.clientWidth
       const height = board.clientHeight
       boardBoundsRef.current = { width, height }
+      const layoutCardSize = getLayoutCardSize()
 
       const columns = getBoardColumns(width)
       const rows = Math.ceil(cards.length / columns)
-      const usableWidth = width - BOARD_PADDING * 2 - CARD_WIDTH
-      const usableHeight = height - BOARD_PADDING * 2 - CARD_HEIGHT
+      const usableWidth = width - BOARD_PADDING * 2 - layoutCardSize.width
+      const usableHeight = height - BOARD_PADDING * 2 - layoutCardSize.height
       const gapX = columns > 1 ? usableWidth / (columns - 1) : 0
       const gapY = rows > 1 ? usableHeight / (rows - 1) : 0
 
@@ -312,8 +324,10 @@ const App = () => {
         current.map((card, index) => {
           const column = index % columns
           const row = Math.floor(index / columns)
-          const x = BOARD_PADDING + column * gapX
-          const y = BOARD_PADDING + row * gapY
+          const slotX = BOARD_PADDING + column * gapX
+          const slotY = BOARD_PADDING + row * gapY
+          const x = slotX + (layoutCardSize.width - CARD_WIDTH) / 2
+          const y = slotY + (layoutCardSize.height - CARD_HEIGHT) / 2
           const isUnset = card.position.x === 0 && card.position.y === 0
 
           return {
@@ -334,7 +348,7 @@ const App = () => {
     }
 
     return () => observer.disconnect()
-  }, [cards.length, deckVersion])
+  }, [cards.length, deckVersion, isCompactBoard])
 
   useEffect(() => {
     if (!boardAwake || allMatched) {
@@ -420,6 +434,16 @@ const App = () => {
       y: event.clientY - rect.top,
       active: true,
     }
+
+    if (isTouchDevice && !boardAwake) {
+      setBoardAwake(true)
+      setCards((current) =>
+        current.map((card) => ({
+          ...card,
+          sleeping: false,
+        })),
+      )
+    }
   }
 
   const handlePointerUp = () => {
@@ -443,6 +467,15 @@ const App = () => {
 
     if (!boardAwake) {
       setBoardAwake(true)
+      if (isTouchDevice) {
+        setCards((current) =>
+          current.map((card) => ({
+            ...card,
+            sleeping: false,
+          })),
+        )
+        return
+      }
     }
 
     const currentlyRevealed = revealedIdsRef.current
@@ -452,6 +485,34 @@ const App = () => {
     }
 
     const nextRevealed = [...currentlyRevealed, cardId]
+
+    if (
+      isTouchDevice &&
+      currentlyRevealed.length === 0 &&
+      shouldTriggerMobilePanic()
+    ) {
+      clearCardMotion(cardId)
+      setCards((current) =>
+        current.map((card) =>
+          card.id === cardId
+            ? {
+                ...card,
+                sleeping: false,
+                fleeingUntil: null,
+                hopUntil: null,
+                effect: 'none',
+                position: getMobilePanicPosition(
+                  card,
+                  getBoardBounds(),
+                  cursorRef.current.x,
+                ),
+              }
+            : card,
+        ),
+      )
+
+      return
+    }
 
     if (isPrankEligible(clicked) && shouldTriggerPrank()) {
       const prankText =
@@ -630,6 +691,7 @@ const App = () => {
                   isBoardAwake={boardAwake}
                   isFleeing={isFleeing}
                   nowTick={nowTick}
+                  compactScale={isCompactBoard ? 0.64 : 1}
                   onClick={() => handleCardClick(card.id)}
                 />
               )

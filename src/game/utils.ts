@@ -158,19 +158,25 @@ export const startMobileRoam = (
   velocityMap: VelocityMap,
 ) => {
   const nextDuration = getRandomFleeDuration()
-  const effect: EscapeEffect = Math.random() < 0.5 ? 'dodge' : 'bounce'
-  const directionX = card.id % 2 === 0 ? -1 : 1
+  const effectRoll = Math.random()
+  const effect: EscapeEffect =
+    effectRoll > 0.72 ? 'hop' : effectRoll > 0.18 ? 'dodge' : 'small'
+  const directionX =
+    (Math.random() > 0.5 ? 1 : -1) * (card.id % 2 === 0 ? 1 : -1)
+  const directionY = Math.random() > 0.5 ? 1 : -1
 
-  if (effect === 'bounce') {
+  if (effect === 'hop') {
     velocityMap[card.id] = {
-      x: directionX * 12,
-      y: -24,
+      x: directionX * 2.8,
+      y: directionY * 1.2,
+    }
+  } else if (effect === 'dodge') {
+    velocityMap[card.id] = {
+      x: directionX * 2.6,
+      y: (Math.random() - 0.5) * 1.6,
     }
   } else {
-    velocityMap[card.id] = {
-      x: directionX * 1.8,
-      y: (Math.random() - 0.5) * 1.2,
-    }
+    velocityMap[card.id] = { x: 0, y: 0 }
   }
 
   return {
@@ -178,13 +184,21 @@ export const startMobileRoam = (
     sleeping: false,
     fleeingDurationMs: nextDuration,
     fleeingUntil: now + nextDuration,
-    hopUntil: null,
+    hopUntil: effect === 'hop' ? now + 360 : null,
     effect,
-    position: getImpulsePosition(
-      card.position,
-      { x: directionX * 6, y: 0 },
-      bounds,
-    ),
+    position:
+      effect === 'hop'
+        ? getHopPosition(
+            card.position,
+            directionX * -180,
+            directionY * -120,
+            bounds,
+          )
+        : getImpulsePosition(
+            card.position,
+            { x: directionX * 16, y: directionY * 8 },
+            bounds,
+          ),
   }
 }
 
@@ -353,6 +367,34 @@ export const getSeparationImpulse = (
 export const getBoardColumns = (width: number) => (width < 700 ? 2 : 4)
 
 export const shouldTriggerPrank = () => Math.random() < 0.22
+
+export const shouldTriggerMobilePanic = () => Math.random() < 0.26
+
+export const getMobilePanicPosition = (
+  card: CardState,
+  bounds: Bounds,
+  cursorX?: number,
+) => {
+  const leftTarget = BOARD_PADDING
+  const rightTarget = bounds.width - CARD_WIDTH - BOARD_PADDING
+  const topTarget = BOARD_PADDING
+  const bottomTarget = bounds.height - CARD_HEIGHT - BOARD_PADDING
+  const currentCenterX = card.position.x + CARD_WIDTH / 2
+  const shouldFlyOppositeSide =
+    cursorX !== undefined ? currentCenterX < cursorX : Math.random() > 0.5
+
+  if (Math.random() > 0.5) {
+    return {
+      x: shouldFlyOppositeSide ? rightTarget : leftTarget,
+      y: topTarget,
+    }
+  }
+
+  return {
+    x: card.position.x < bounds.width / 2 ? rightTarget : leftTarget,
+    y: bottomTarget,
+  }
+}
 
 export const applyCardSeparation = (
   card: CardState,

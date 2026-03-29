@@ -9,6 +9,7 @@ type MemoCardProps = {
   isBoardAwake: boolean;
   isFleeing: boolean;
   nowTick: number;
+  compactScale: number;
   onClick: () => void;
 };
 
@@ -37,11 +38,12 @@ const MemoCard = ({
   isBoardAwake,
   isFleeing,
   nowTick,
+  compactScale,
   onClick,
 }: MemoCardProps) => {
-  const scale = getEffectScale(card.effect, isFleeing)
-  const offsetX = (CARD_WIDTH * (1 - scale)) / 2
-  const offsetY = (CARD_HEIGHT * (1 - scale)) / 2
+  const scale = getEffectScale(card.effect, isFleeing) * compactScale
+  const offsetX = (CARD_WIDTH * (scale - 1)) / 2
+  const offsetY = (CARD_HEIGHT * (scale - 1)) / 2
   const isHopping = card.hopUntil !== null && card.hopUntil > nowTick && isFleeing
   const isBouncing = isFleeing && card.effect === 'bounce'
   const zIndex =
