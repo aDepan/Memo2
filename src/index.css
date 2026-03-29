@@ -1,0 +1,60 @@
+:root {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #23322b;
+  background:
+    radial-gradient(circle at top, rgba(255, 238, 194, 0.8), transparent 32%),
+    linear-gradient(180deg, #f3e2b7 0%, #d5e2c0 52%, #a7c8bf 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+}
+
+h1,
+h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 0.95;
+  color: #17332f;
+}
+
+h1 {
+  font-size: clamp(3.2rem, 6vw, 4rem);
+  letter-spacing: -0.05em;
+}
+
+h2 {
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  letter-spacing: -0.04em;
+}
+
+p {
+  color: #4d5548;
+}
