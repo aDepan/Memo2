@@ -7,7 +7,7 @@ import {
   BOARD_PADDING,
   CARD_HEIGHT,
   CARD_WIDTH,
-  MAX_PRANK_REVEALS,
+  PAIR_COUNT_OPTIONS,
   PRANK_MESSAGES,
 } from './game/constants'
 import { getRandomFleeDuration } from './game/effects'
@@ -21,7 +21,6 @@ import {
   getMobilePanicPosition,
   getCardMotionState,
   getStoredVelocity,
-  shouldTriggerPrank,
   shouldTriggerMobilePanic,
   shouldRelaxCard,
   shouldStartChase,
@@ -29,6 +28,7 @@ import {
   startChase,
 } from './game/utils'
 import type { CardState, Position } from './game/types'
+import type { PairCountOption } from './game/constants'
 
 type Cursor = {
   x: number
@@ -49,18 +49,28 @@ const App = () => {
   const phaseRef = useRef<Record<number, number>>({})
   const boardBoundsRef = useRef({ width: 880, height: 600 })
   const revealedIdsRef = useRef<number[]>([])
+  const lastPrankStepShownRef = useRef(0)
 
-  const [cards, setCards] = useState<CardState[]>(() => createDeck())
+  const defaultPairCount = PAIR_COUNT_OPTIONS[0]
+  const [pairCount, setPairCount] = useState<PairCountOption>(defaultPairCount)
+  const [cards, setCards] = useState<CardState[]>(() => createDeck(defaultPairCount))
   const [boardAwake, setBoardAwake] = useState(false)
   const [locked, setLocked] = useState(false)
   const [turns, setTurns] = useState(0)
+  const [steps, setSteps] = useState(0)
+  const [topCardId, setTopCardId] = useState<number | null>(null)
   const [winPulse, setWinPulse] = useState(0)
   const [confettiBurst, setConfettiBurst] = useState(0)
   const [nowTick, setNowTick] = useState(() => performance.now())
   const [deckVersion, setDeckVersion] = useState(0)
-  const [prankRevealsLeft, setPrankRevealsLeft] = useState(MAX_PRANK_REVEALS)
+  const [prankCount, setPrankCount] = useState(0)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
   const [isCompactBoard, setIsCompactBoard] = useState(false)
+  const [cardScale, setCardScale] = useState(1)
+
+  const getRandomPrankStepGap = () => 5 + Math.floor(Math.random() * 6)
+
+  const [nextPrankStep, setNextPrankStep] = useState(() => getRandomPrankStepGap())
 
   const matchedCount = cards.filter((card) => card.matched).length
   const allMatched = matchedCount === cards.length
@@ -89,9 +99,31 @@ const App = () => {
     return () => mediaQuery.removeEventListener('change', syncCompactBoard)
   }, [])
 
-  const isPrankEligible = (card: CardState) =>
-    turns >= 10 &&
-    prankRevealsLeft > 0 &&
+  useEffect(() => {
+    const syncCardScale = () => {
+      const width = window.innerWidth
+
+      if (width < 420) {
+        setCardScale(0.56)
+        return
+      }
+
+      if (width < 640) {
+        setCardScale(0.64)
+        return
+      }
+
+      setCardScale(1)
+    }
+
+    syncCardScale()
+    window.addEventListener('resize', syncCardScale)
+
+    return () => window.removeEventListener('resize', syncCardScale)
+  }, [])
+
+  const isPrankEligible = (card: CardState, nextStep: number) =>
+    nextStep >= nextPrankStep &&
     !card.prankText &&
     !card.matched &&
     !card.revealed
@@ -99,11 +131,9 @@ const App = () => {
   const getBoardBounds = (): Bounds => boardBoundsRef.current
 
   const getLayoutCardSize = () => {
-    const scale = isCompactBoard ? 0.64 : 1
-
     return {
-      width: CARD_WIDTH * scale,
-      height: CARD_HEIGHT * scale,
+      width: CARD_WIDTH * cardScale,
+      height: CARD_HEIGHT * cardScale,
     }
   }
 
@@ -313,7 +343,7 @@ const App = () => {
       boardBoundsRef.current = { width, height }
       const layoutCardSize = getLayoutCardSize()
 
-      const columns = getBoardColumns(width)
+      const columns = getBoardColumns(width, cards.length)
       const rows = Math.ceil(cards.length / columns)
       const usableWidth = width - BOARD_PADDING * 2 - layoutCardSize.width
       const usableHeight = height - BOARD_PADDING * 2 - layoutCardSize.height
@@ -485,6 +515,10 @@ const App = () => {
     }
 
     const nextRevealed = [...currentlyRevealed, cardId]
+    const nextStep = steps + 1
+
+    setTopCardId(cardId)
+    setSteps(nextStep)
 
     if (
       isTouchDevice &&
@@ -514,14 +548,13 @@ const App = () => {
       return
     }
 
-    if (isPrankEligible(clicked) && shouldTriggerPrank()) {
-      const prankText =
-        PRANK_MESSAGES[
-          (MAX_PRANK_REVEALS - prankRevealsLeft) % PRANK_MESSAGES.length
-        ]
+    if (isPrankEligible(clicked, nextStep)) {
+      const prankText = PRANK_MESSAGES[prankCount % PRANK_MESSAGES.length]
 
       setLocked(true)
-      setPrankRevealsLeft((value) => value - 1)
+      lastPrankStepShownRef.current = nextStep
+      setNextPrankStep(nextStep + getRandomPrankStepGap())
+      setPrankCount((value) => value + 1)
       setCards((current) =>
         current.map((card) =>
           card.id === cardId
@@ -551,6 +584,7 @@ const App = () => {
               : card,
           ),
         )
+        setTopCardId(null)
         setLocked(false)
       }, 1300)
 
@@ -601,6 +635,7 @@ const App = () => {
               : card,
           ),
         )
+        setTopCardId(null)
         setLocked(false)
       }, 340)
       return
@@ -625,6 +660,7 @@ const App = () => {
           }
         }),
       )
+      setTopCardId(null)
       setLocked(false)
     }, 920)
   }
@@ -636,11 +672,40 @@ const App = () => {
     setBoardAwake(false)
     setLocked(false)
     setTurns(0)
+    setSteps(0)
+    setTopCardId(null)
     setConfettiBurst(0)
     setNowTick(performance.now())
     setDeckVersion((value) => value + 1)
-    setPrankRevealsLeft(MAX_PRANK_REVEALS)
-    setCards(createDeck())
+    lastPrankStepShownRef.current = 0
+    setNextPrankStep(getRandomPrankStepGap())
+    setPrankCount(0)
+    setCards(createDeck(pairCount))
+  }
+
+  const handlePairCountChange = (nextPairCount: PairCountOption) => {
+    if (nextPairCount === pairCount) {
+      restart()
+      return
+    }
+
+    velocityRef.current = {}
+    phaseRef.current = {}
+    cursorRef.current.active = false
+    setPairCount(nextPairCount)
+    setBoardAwake(false)
+    setLocked(false)
+    setTurns(0)
+    setSteps(0)
+    setTopCardId(null)
+    setWinPulse(0)
+    setConfettiBurst(0)
+    setNowTick(performance.now())
+    setDeckVersion((value) => value + 1)
+    lastPrankStepShownRef.current = 0
+    setNextPrankStep(getRandomPrankStepGap())
+    setPrankCount(0)
+    setCards(createDeck(nextPairCount))
   }
 
   return (
@@ -652,6 +717,8 @@ const App = () => {
           turns={turns}
           matchedPairs={matchedCount / 2}
           totalPairs={cards.length / 2}
+          pairCount={pairCount}
+          onPairCountChange={handlePairCountChange}
           onRestart={restart}
         />
 
@@ -663,7 +730,7 @@ const App = () => {
             </div>
             <p className='board-hint'>
               {!boardAwake &&
-                '8 themed egg pairs are asleep until your first click.'}
+                `${pairCount} themed egg pairs are asleep until your first click.`}
               {boardAwake &&
                 !allMatched &&
                 'Each new chase rolls one gentle escape effect.'}
@@ -690,8 +757,9 @@ const App = () => {
                   card={card}
                   isBoardAwake={boardAwake}
                   isFleeing={isFleeing}
+                  isTopCard={topCardId === card.id}
                   nowTick={nowTick}
-                  compactScale={isCompactBoard ? 0.64 : 1}
+                  compactScale={cardScale}
                   onClick={() => handleCardClick(card.id)}
                 />
               )

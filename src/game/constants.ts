@@ -31,6 +31,9 @@ export const PRANK_MESSAGES = [
   'Loading... please wait forever',
 ];
 
+export const PAIR_COUNT_OPTIONS = [8, 10, 12] as const;
+export type PairCountOption = (typeof PAIR_COUNT_OPTIONS)[number];
+
 export const SYMBOLS: Array<
   Pick<CardData, 'icon' | 'title' | 'accent' | 'shellPattern'>
 > = [
@@ -89,5 +92,61 @@ export const SYMBOLS: Array<
     accent: '#c9c2ff',
     shellPattern:
       'radial-gradient(circle at 28% 34%, rgba(255,255,255,0.24) 0 10px, rgba(255,255,255,0) 11px), radial-gradient(circle at 68% 42%, rgba(255,255,255,0.24) 0 12px, rgba(255,255,255,0) 13px), repeating-linear-gradient(90deg, rgba(255,255,255,0.1) 0 10px, rgba(255,255,255,0) 10px 20px)',
+  },
+  {
+    icon: '🍬',
+    title: 'Candy',
+    accent: '#ff94b8',
+    shellPattern:
+      'repeating-linear-gradient(45deg, rgba(255,255,255,0.24) 0 8px, rgba(255,255,255,0) 8px 16px)',
+  },
+  {
+    icon: '☀️',
+    title: 'Sun',
+    accent: '#ffd166',
+    shellPattern:
+      'radial-gradient(circle at 50% 34%, rgba(255,255,255,0.28) 0 14px, rgba(255,255,255,0) 15px), repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,0.12) 0 10px, rgba(255,255,255,0) 10px 20px)',
+  },
+  {
+    icon: '🦆',
+    title: 'Duck',
+    accent: '#ffe082',
+    shellPattern:
+      'repeating-linear-gradient(180deg, rgba(255,255,255,0.22) 0 7px, rgba(255,255,255,0) 7px 16px), radial-gradient(circle at 24% 36%, rgba(255,255,255,0.18) 0 9px, rgba(255,255,255,0) 10px)',
+  },
+  {
+    icon: '🍒',
+    title: 'Berry',
+    accent: '#f28482',
+    shellPattern:
+      'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0 8px, rgba(255,255,255,0) 9px), radial-gradient(circle at 70% 52%, rgba(255,255,255,0.18) 0 10px, rgba(255,255,255,0) 11px)',
+  },
+  {
+    icon: '🌈',
+    title: 'Rainbow',
+    accent: '#8ecae6',
+    shellPattern:
+      'repeating-linear-gradient(135deg, rgba(255,255,255,0.24) 0 6px, rgba(255,255,255,0) 6px 13px), linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.18))',
+  },
+  {
+    icon: '🥨',
+    title: 'Pretzel',
+    accent: '#c48b5a',
+    shellPattern:
+      'repeating-linear-gradient(90deg, rgba(255,255,255,0.18) 0 9px, rgba(255,255,255,0) 9px 18px), repeating-linear-gradient(180deg, rgba(255,255,255,0.1) 0 9px, rgba(255,255,255,0) 9px 18px)',
+  },
+  {
+    icon: '⭐',
+    title: 'Star',
+    accent: '#bdb2ff',
+    shellPattern:
+      'radial-gradient(circle at 50% 20%, rgba(255,255,255,0.3), transparent 24%), repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,0.16) 0 9px, rgba(255,255,255,0) 9px 19px)',
+  },
+  {
+    icon: '🍀',
+    title: 'Clover',
+    accent: '#95d6a4',
+    shellPattern:
+      'repeating-linear-gradient(45deg, rgba(255,255,255,0.2) 0 10px, rgba(255,255,255,0) 10px 20px), radial-gradient(circle at 66% 30%, rgba(255,255,255,0.22) 0 10px, rgba(255,255,255,0) 11px)',
   },
 ];

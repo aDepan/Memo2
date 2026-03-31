@@ -8,6 +8,7 @@ import {
 } from './constants'
 import { getRandomEscapeEffect, getRandomFleeDuration } from './effects'
 import type { CardState, EscapeEffect, Position } from './types'
+import type { PairCountOption } from './constants'
 
 type Bounds = {
   width: number
@@ -52,9 +53,9 @@ export const shuffle = <T,>(items: T[]) => {
   return next
 }
 
-export const createDeck = (): CardState[] =>
+export const createDeck = (pairCount: PairCountOption = 8): CardState[] =>
   shuffle(
-    SYMBOLS.flatMap((symbol, pairId) => [
+    SYMBOLS.slice(0, pairCount).flatMap((symbol, pairId) => [
       {
         id: pairId * 2,
         pairId,
@@ -311,34 +312,11 @@ export const getSeparationImpulse = (
   cardId: number,
   position: Position,
   current: CardState[],
-  bounds: Bounds,
 ) => {
   let pushX = 0
   let pushY = 0
   const centerX = position.x + CARD_WIDTH / 2
   const centerY = position.y + CARD_HEIGHT / 2
-  const leftEdge = position.x - BOARD_PADDING
-  const rightEdge = bounds.width - BOARD_PADDING - (position.x + CARD_WIDTH)
-  const topEdge = position.y - BOARD_PADDING
-  const bottomEdge = bounds.height - BOARD_PADDING - (position.y + CARD_HEIGHT)
-  const cornerThreshold = 36
-
-  if (leftEdge < cornerThreshold && topEdge < cornerThreshold) {
-    pushX += 1.8
-    pushY += 1.8
-  }
-  if (rightEdge < cornerThreshold && topEdge < cornerThreshold) {
-    pushX -= 1.8
-    pushY += 1.8
-  }
-  if (leftEdge < cornerThreshold && bottomEdge < cornerThreshold) {
-    pushX += 1.8
-    pushY -= 1.8
-  }
-  if (rightEdge < cornerThreshold && bottomEdge < cornerThreshold) {
-    pushX -= 1.8
-    pushY -= 1.8
-  }
 
   for (const other of current) {
     if (other.id === cardId || other.matched || other.revealed) {
@@ -364,11 +342,37 @@ export const getSeparationImpulse = (
   return { x: pushX, y: pushY }
 }
 
-export const getBoardColumns = (width: number) => (width < 700 ? 2 : 4)
+export const getBoardColumns = (width: number, cardCount: number) => {
+  if (width < 420) {
+    return cardCount >= 20 ? 3 : 2
+  }
+
+  if (width < 700) {
+    return 2
+  }
+
+  if (width < 980) {
+    if (cardCount >= 20) {
+      return 4
+    }
+
+    return 3
+  }
+
+  if (cardCount >= 20) {
+    return 5
+  }
+
+  if (cardCount >= 16) {
+    return 4
+  }
+
+  return 4
+}
 
 export const shouldTriggerPrank = () => Math.random() < 0.22
 
-export const shouldTriggerMobilePanic = () => Math.random() < 0.26
+export const shouldTriggerMobilePanic = () => Math.random() < 0.1
 
 export const getMobilePanicPosition = (
   card: CardState,
@@ -407,7 +411,7 @@ export const applyCardSeparation = (
     return { position, velocity }
   }
 
-  const separation = getSeparationImpulse(card.id, position, current, bounds)
+  const separation = getSeparationImpulse(card.id, position, current)
   const nextVelocity = {
     x: velocity.x + separation.x,
     y: velocity.y + separation.y,

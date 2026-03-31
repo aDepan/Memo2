@@ -45,7 +45,7 @@ export const createConfettiBurst = (
   const createParticle = (shape: ConfettiShape): ConfettiParticle => {
     const angle = randomBetween(-Math.PI * 0.92, -Math.PI * 0.08)
     const speed =
-      shape === 'text' ? randomBetween(8, 12) : randomBetween(7, 15.5)
+      shape === 'text' ? randomBetween(5.8, 8.6) : randomBetween(4.8, 11.2)
     const size =
       shape === 'text'
         ? randomBetween(18, 26)
@@ -61,9 +61,9 @@ export const createConfettiBurst = (
       vy: Math.sin(angle) * speed,
       size,
       rotation: randomBetween(0, Math.PI * 2),
-      rotationVelocity: randomBetween(-0.22, 0.22),
-      life: shape === 'text' ? 210 : 182,
-      maxLife: shape === 'text' ? 210 : 182,
+      rotationVelocity: randomBetween(-0.14, 0.14),
+      life: shape === 'text' ? 280 : 240,
+      maxLife: shape === 'text' ? 280 : 240,
       color: pickRandom(CONFETTI_COLORS),
       shape,
       text: shape === 'text' ? CONFETTI_TEXT : undefined,
@@ -81,8 +81,8 @@ export const updateConfettiParticle = (particle: ConfettiParticle) => ({
   ...particle,
   x: particle.x + particle.vx,
   y: particle.y + particle.vy,
-  vx: particle.vx * 0.997,
-  vy: particle.vy + 0.2,
+  vx: particle.vx * 0.995,
+  vy: particle.vy + 0.14,
   rotation: particle.rotation + particle.rotationVelocity,
   life: particle.life - 1,
 })

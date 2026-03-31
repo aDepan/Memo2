@@ -8,6 +8,7 @@ type MemoCardProps = {
   card: CardState;
   isBoardAwake: boolean;
   isFleeing: boolean;
+  isTopCard: boolean;
   nowTick: number;
   compactScale: number;
   onClick: () => void;
@@ -37,6 +38,7 @@ const MemoCard = ({
   card,
   isBoardAwake,
   isFleeing,
+  isTopCard,
   nowTick,
   compactScale,
   onClick,
@@ -46,8 +48,15 @@ const MemoCard = ({
   const offsetY = (CARD_HEIGHT * (scale - 1)) / 2
   const isHopping = card.hopUntil !== null && card.hopUntil > nowTick && isFleeing
   const isBouncing = isFleeing && card.effect === 'bounce'
-  const zIndex =
-    card.revealed || isBouncing ? 30 : isFleeing ? 20 : card.matched ? 10 : 1
+  const zIndex = isTopCard
+    ? 50
+    : card.revealed || isBouncing
+      ? 30
+      : isFleeing
+        ? 20
+        : card.matched
+          ? 10
+          : 1
 
   return (
     <button

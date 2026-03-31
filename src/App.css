@@ -57,6 +57,42 @@
   max-width: 24rem;
 }
 
+.pair-count-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.pair-count-button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 41, 21, 0.14);
+  background: rgba(255, 251, 244, 0.92);
+  color: #355046;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+}
+
+.pair-count-button:hover,
+.pair-count-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(36, 74, 65, 0.26);
+}
+
+.pair-count-button.is-selected {
+  background: linear-gradient(135deg, #254a41, #16362f);
+  border-color: transparent;
+  color: #fffaf2;
+}
+
 .status-row {
   display: flex;
   flex-wrap: wrap;
@@ -435,7 +471,8 @@
   }
 
   .board {
-    min-height: 940px;
-    padding-left: 1rem;
-  }
+    min-height: 780px;
+    padding-left:1.5rem;
+;   padding-top:1.75rem;
+}
 }
